@@ -1,0 +1,45 @@
+trigger:
+- main
+
+pool:
+  name: dockerpool
+
+steps:
+
+# Checkout source code
+- checkout: self
+
+# Build and Push Docker Image
+- task: Docker@2
+  displayName: Build and Push Docker Image
+  inputs:
+    containerRegistry: 'DOCKERSERVICECONNECTION'
+    repository: 'blazeak/dockerpipeline'
+    command: 'buildAndPush'
+    Dockerfile: 'DOCKERPIPELINE/Dockerfile'
+    tags: |
+      latest
+      $(Build.BuildId)
+
+# Deploy Container
+- script: |
+    echo "Stopping old container..."
+    docker stop dockerpipeline || true
+
+    echo "Removing old container..."
+    docker rm dockerpipeline || true
+
+    echo "Pulling latest image..."
+    docker pull blazeak/dockerpipeline:latest
+
+    echo "Starting container..."
+    docker run -d \
+      --name dockerpipeline \
+      --restart always \
+      -p 80:5000 \
+      blazeak/dockerpipeline:latest
+
+    echo "Current containers:"
+    docker ps
+
+  displayName: Deploy Docker Container
