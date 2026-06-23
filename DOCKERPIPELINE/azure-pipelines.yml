@@ -6,22 +6,19 @@ pool:
 
 steps:
 
-# Checkout source code
 - checkout: self
 
-# Build and Push Docker Image
 - task: Docker@2
   displayName: Build and Push Docker Image
   inputs:
     containerRegistry: 'DOCKERSERVICECONNECTION'
     repository: 'blazeak/dockerpipeline'
     command: 'buildAndPush'
-    Dockerfile: 'DOCKERPIPELINE/Dockerfile'
+    Dockerfile: '$(Build.SourcesDirectory)/DOCKERPIPELINE/Dockerfile'
     tags: |
       latest
       $(Build.BuildId)
 
-# Deploy Container
 - script: |
     echo "Stopping old container..."
     docker stop dockerpipeline || true
@@ -39,7 +36,5 @@ steps:
       -p 80:5000 \
       blazeak/dockerpipeline:latest
 
-    echo "Current containers:"
     docker ps
-
   displayName: Deploy Docker Container
