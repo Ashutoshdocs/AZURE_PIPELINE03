@@ -1,0 +1,50 @@
+trigger:
+- main
+
+pool:
+  name: mypoolx
+
+variables:
+  imageRepository: blazeak/dockerpipeline
+  dockerRegistryServiceConnection: myconnectiontodocker
+  dockerfilePath: $(Build.SourcesDirectory)/DOCKERPIPELINE/Dockerfile
+
+steps:
+
+- checkout: self
+
+- task: Docker@2
+  displayName: Build Docker Image
+  inputs:
+    containerRegistry: $(dockerRegistryServiceConnection)
+    repository: $(imageRepository)
+    command: build
+    Dockerfile: $(dockerfilePath)
+    tags: |
+      latest
+      $(Build.BuildId)
+
+- task: Docker@2
+  displayName: Push Docker Image
+  inputs:
+    containerRegistry: $(dockerRegistryServiceConnection)
+    repository: $(imageRepository)
+    command: push
+    tags: |
+      latest
+      $(Build.BuildId)
+
+- task: CopyFiles@2
+  displayName: Copy Release Files
+  inputs:
+    SourceFolder: $(Build.SourcesDirectory)
+    Contents: |
+      **
+    TargetFolder: $(Build.ArtifactStagingDirectory)
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish Build Artifact
+  inputs:
+    PathtoPublish: $(Build.ArtifactStagingDirectory)
+    ArtifactName: drop
+    publishLocation: Container
